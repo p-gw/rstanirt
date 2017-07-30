@@ -1,0 +1,26 @@
+Package: rstanirt
+Type: Package
+Title: Fitting Item Response Models using Stan
+Version: 0.1.0.9000
+Date: 2017-07-29
+Author: Philipp Gewessler
+Maintainer: Philipp Gewessler <philipp@gewessler.com>
+Description: This package offers utilities for fitting Bayesian Item Response Models using Stan.
+License: GPL (>= 3)
+Depends: 
+  R (>= 3.0.2), 
+  Rcpp (>= 0.12.12), 
+  methods
+Imports: 
+  rstan (>= 2.16.2), 
+  rstantools (>= 1.2.0),
+  data.table
+LinkingTo: 
+  StanHeaders (>= 2.16.0.1), 
+  rstan (>= 2.16.2), 
+  BH (>= 1.62.0.1), 
+  Rcpp (>= 0.12.12), 
+  RcppEigen (>= 0.3.3.3.0)
+NeedsCompilation: yes
+RoxygenNote: 6.0.1
+
