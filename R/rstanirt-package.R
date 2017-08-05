@@ -17,6 +17,10 @@
 #' @export      long_to_stanlist
 #' @export      wide_to_stanlist
 #' @export      icc
+#' @export      tcc
+#' @export      iic
+#' @export      tic
+#' @export      ppc_observed_score
 #'
 #' @description Hier kommt noch eine Package description her.!
 #'

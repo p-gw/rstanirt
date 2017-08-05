@@ -1,47 +1,59 @@
 #' @title
 #' Posterior predictive score distribution plot
-#
+#'
 #' @description
 #' Posterior predictive check of observed score distribution for IRT models
-#
+#'
 #' @param   y_rep     posterior replications of a stanfit object
 #' @param   data      Stan data file (named list) 
-#' @param   confint   confidence level
+#' @param   draws     number of random draws from y_rep
+#' @param   seed      set a seed for the random number generator
+#' @param   alpha     opacity of lines for posterior predicted scores 
 #'
-#' @export
-#'
-ppc_observed_score <- function(y_rep, data, confint = 0.95) {
+ppc_observed_score <- function(y_rep, data, draws = NULL, seed = NULL, alpha = 0.1) {
+  if (!is.null(seed)) { set.seed(seed) }
+
   extent <- 0:data$K 
 
-  get_scores <- function(x, by) {
-    table(factor(tapply(x, by, sum), levels = extent))
-  }
-
   # calculate observed scores distributions 
-  score_obs <- get_scores(data$y, data$j)
-
-  # calculate replicated score distribution per iteration
-  score_rep <- apply(y_rep, 1, function(x) { get_scores(x, data$j) })   
-
-  # get quantiles
-  bound <- (1 - confint)/2
-  int <- c(0 + bound, 0.5, 1 - bound) 
-
-  score_rep <- apply(score_rep, 1, function(x) { quantile(x, probs = int) }) 
-  rownames(score_rep) <- c("lwr", "md", "upr")
-
-  # data tidying for plotting
-  plot_data <- data.frame(score_obs, t(score_rep))
-  plot_data$Var1 <- as.numeric(as.character(plot_data$Var1))
+  d <- data.table("x" = extent, "y" = get_scores(data$y, data$j, extent))
   
+  # calculate replicated score distribution per iteration
+  if (!is.null(draws)) {
+    if (draws > nrow(y_rep)) {
+      msg <- paste0("Argument 'draws' must be >= ", nrow(y_rep), "! Maximum number of draws used.")
+      warning(msg, call. = FALSE, immediate. = TRUE)
+      draws <- nrow(y_rep)
+      samp  <- 1:draws
+    } else {
+      samp <- sample(nrow(y_rep), draws)
+    }
+
+    v <- paste0("v", samp)
+
+    # calculate predicted scores
+    d[, eval(v) := 0L] 
+    
+    for (i in 1:draws) {
+      set(d, NULL, v[i], get_scores(y_rep[samp[i], ], data$j, extent))
+    }
+  }
+  # data tidying for plotting
+  d <- melt(d, id.vars = "x")
+  d[, "ind" := ifelse(variable == "y", FALSE, TRUE)]
+
+  col <- c("#FF5722",  "#FFCCBC")
   # init plot
-  ggplot(data = plot_data, aes_string(x = "Var1")) + 
-    geom_path(aes_string(y = "Freq"), colour = "orange") +
-    geom_point(aes_string(y = "Freq"), colour = "orange") + 
-    geom_path(aes_string(y = "md")) + 
-    geom_point(aes_string(y = "md"), shape = 21, fill = "white") + 
-    geom_path(aes_string(y = "lwr"), linetype = 3) + 
-    geom_path(aes_string(y = "upr"), linetype = 3) +
+  ggplot(d, aes(x, value, group = variable)) + 
+    geom_path(colour = col[2], alpha = alpha) + 
+    geom_path(aes(colour = ind), size = 1) + 
+    scale_colour_manual(values = c(col[1], "transparent"), guide = "none") +  
+    scale_x_continuous(limits = c(0, data$K), expand = c(0, 0)) + 
     xlab("score") + 
-    ylab("frequency")  
+    ylab("frequency") + 
+    theme_minimal() 
+}
+
+get_scores <- function(x, by, extent) {
+  as.integer(table(factor(tapply(x, by, sum), levels = extent)))
 }
